@@ -148,20 +148,28 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
 
-  // compute predicted observations from map landmarks
-  vector<LandmarkObs> predictions;
-  int temp_id;
-  double temp_x;
-  double temp_y;
-  for (unsigned int m = 0; m < map_landmarks.landmark_list.size(); ++m) {
-    temp_id = map_landmarks.landmark_list[m].id_i;
-    temp_x = map_landmarks.landmark_list[m].x_f;
-    temp_y = map_landmarks.landmark_list[m].y_f;
-    predictions.push_back(LandmarkObs{temp_id, temp_x, temp_y});
-  }
-
   // iterate over all particles
   for (int p = 0; p < num_particles; ++p) {
+
+    // compute predicted observations from map landmarks within sensor range
+    vector<LandmarkObs> predictions;
+    int landmark_id;
+    double landmark_x, landmark_y;
+    double dist_x, dist_y, dist_particle_landmark;
+    for (unsigned int m = 0; m < map_landmarks.landmark_list.size(); ++m) {
+      landmark_id = map_landmarks.landmark_list[m].id_i;
+      landmark_x = map_landmarks.landmark_list[m].x_f;
+      landmark_y = map_landmarks.landmark_list[m].y_f;
+      
+      dist_x = landmark_x - particles[p].x;
+      dist_y = landmark_y - particles[p].y;
+      dist_particle_landmark = sqrt( dist_x*dist_x + dist_y*dist_y );
+      // include landmark into predicted observation if it is in sensor range
+      if ( dist_particle_landmark <= sensor_range ) {
+        predictions.push_back(LandmarkObs{landmark_id, landmark_x, landmark_y});
+      }
+    }
+
     // initialize vector for transformed observations of current particle
     vector<LandmarkObs> transformed_observations;
 
@@ -206,6 +214,7 @@ void ParticleFilter::resample() {
    * NOTE: You may find std::discrete_distribution helpful here.
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
+
 
 }
 
