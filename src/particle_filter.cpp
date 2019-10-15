@@ -110,14 +110,12 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, vector<Landm
     int temp_id = -1;
     for (int p = 0; p < predicted.size(); ++p) {
       double distance = dist(predicted[p].x, predicted[p].y, observations[o].x, observations[o].y);
-      // if (dist <= sensor_range) {
         // check if current distance is smaller than all previous distances
         if (distance < min_dist) {
           min_dist = distance;
           // set id from observation to map landmark id
           temp_id = predicted[p].id;
         }
-      // }
     }
     observations[o].id = temp_id;
   }
@@ -160,15 +158,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
 
-  // double weight_sum = 0;
   // iterate over all particles
-  // vector<double> gauss_vec;
   for (int p = 0; p < num_particles; ++p) {
+
+    std::vector<int> associations;
+    std::vector<double> sense_x;
+    std::vector<double> sense_y;
 
     // compute predicted observations from map landmarks within sensor range
     vector<LandmarkObs> predictions;
-    // int landmark_id;
-    // double landmark_x, landmark_y;
     for (int m = 0; m < map_landmarks.landmark_list.size(); ++m) {
       auto landmark = map_landmarks.landmark_list[m];
   
@@ -181,7 +179,6 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
     // initialize vector for transformed observations of current particle
     vector<LandmarkObs> transformed_observations;
-
     // iterate over all observations and transform them into map coordinates
     for (int o = 0; o < observations.size(); ++o) {
       
@@ -193,7 +190,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // associate all observations with predicted observations (landmark positions) for current particle
     dataAssociation(predictions, transformed_observations);
 
-    particles[p].weight = 1.0; // delete
+    particles[p].weight = 1.0;
 
     // iterate over all observations
     for (int o = 0; o < transformed_observations.size(); ++o) {
@@ -203,15 +200,18 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         
           double gauss = multiv_prob(std_landmark[0], std_landmark[1], transformed_observations[o].x, transformed_observations[o].y, predictions[m].x, predictions[m].y);
           particles[p].weight *= gauss;
+
+          associations.push_back(transformed_observations[o].id);
+          sense_x.push_back(transformed_observations[o].x);
+          sense_y.push_back(transformed_observations[o].y);
           
-          // particles[p].associations.push_back(predictions[m].id);
-          // particles[p].sense_x.push_back(predictions[m].x);
-          // particles[p].sense_y.push_back(predictions[m].y);
           break;
         }
       }
 
     }
+
+    SetAssociations(particles[p], associations, sense_x, sense_y);
 
   }
 
@@ -235,10 +235,11 @@ void ParticleFilter::resample() {
   std::discrete_distribution<> discr_distribution(weights.begin(), weights.end());
   
   // initialize new particles
-  vector<Particle> new_particles;
+  vector<Particle> new_particles(num_particles);
   for (int n=0; n<num_particles; ++n) {
     Particle p = particles[discr_distribution(gen)];
-    new_particles.push_back({p.id, p.x, p.y, p.theta, p.weight});
+    new_particles[n] = particles[discr_distribution(gen)];
+    // new_particles.push_back({p.id, p.x, p.y, p.theta, p.weight});
   }
 
   particles = new_particles;
