@@ -70,22 +70,22 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
   std::normal_distribution<double> dist_y(0, std_pos[1]);
   std::normal_distribution<double> dist_theta(0, std_pos[2]);  
   
-  for (int i = 0; i < num_particles; ++i) {   
+  for (Particle& particle : particles) {   
     if (std::abs(yaw_rate) < 0.0000001) {
 
-      particles[i].x += velocity * delta_t * cos(particles[i].theta);
-      particles[i].y += velocity * delta_t * sin(particles[i].theta);
+      particle.x += velocity * delta_t * cos(particle.theta);
+      particle.y += velocity * delta_t * sin(particle.theta);
     }
     else {
 
-      particles[i].x += (velocity/yaw_rate) * ( sin(particles[i].theta + yaw_rate*delta_t) - sin(particles[i].theta) );
-      particles[i].y += (velocity/yaw_rate) * ( cos(particles[i].theta) - cos(particles[i].theta + yaw_rate*delta_t) );
-      particles[i].theta += yaw_rate*delta_t;
+      particle.x += (velocity/yaw_rate) * ( sin(particle.theta + yaw_rate*delta_t) - sin(particle.theta) );
+      particle.y += (velocity/yaw_rate) * ( cos(particle.theta) - cos(particle.theta + yaw_rate*delta_t) );
+      particle.theta += yaw_rate*delta_t;
     }
     
-    particles[i].x += dist_x(gen);
-    particles[i].y += dist_y(gen);
-    particles[i].theta += dist_theta(gen);
+    particle.y += dist_y(gen);
+    particle.x += dist_x(gen);
+    particle.theta += dist_theta(gen);
   } 
 }
 
@@ -99,7 +99,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, vector<Landm
    *   probably find it useful to implement this method and use it as a helper 
    *   during the updateWeights phase.
    */
-  for (LandmarkObs& obs : observations) {
+  for (LandmarkObs& observation : observations) {
 
     // initialize minimum distance with large value
     double min_dist = 100000;
@@ -107,7 +107,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, vector<Landm
     
     for (LandmarkObs& pred : predicted) {
       
-      double distance = dist(pred.x, pred.y, obs.x, obs.y);     
+      double distance = dist(pred.x, pred.y, observation.x, observation.y);     
       // check if current distance is smaller than all previous distances
       if (distance < min_dist) {       
         min_dist = distance;
@@ -115,7 +115,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, vector<Landm
         temp_id = pred.id;   
       }
     }
-    obs.id = temp_id;
+    observation.id = temp_id;
   }
 }
 
